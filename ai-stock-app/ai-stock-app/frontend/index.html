@@ -1,0 +1,73 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Penny Stock Suggestions</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2em; }
+    h1, h2 { color: #2c3e50; }
+    ul { padding-left: 1.2em; }
+    li { margin-bottom: 0.5em; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+  <h1>📈 AI-Generated Penny Stocks</h1>
+  <button onclick="generateStocks()">🔄 Generate New List</button>
+  <p id="error" class="error"></p>
+
+  <h2>🔮 Current Suggestions</h2>
+  <ul id="stockList">No data yet...</ul>
+
+  <h2>📜 Previous Suggestions</h2>
+  <ul id="historyList"></ul>
+
+  <script>
+    async function generateStocks() {
+      document.getElementById('stockList').innerHTML = '<li>Loading...</li>';
+      document.getElementById('error').textContent = '';
+
+      try {
+        const res = await fetch('http://localhost:3000/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await res.json();
+        if (!data.result) throw new Error(data.error || 'No response');
+
+        const lines = data.result.split(/\n+/).filter(Boolean);
+        const ul = document.getElementById('stockList');
+        ul.innerHTML = '';
+        lines.forEach(line => {
+          const li = document.createElement('li');
+          li.textContent = line;
+          ul.appendChild(li);
+        });
+
+        const history = JSON.parse(localStorage.getItem('pennyHistory') || '[]');
+        const now = new Date().toLocaleString();
+        history.unshift({ date: now, items: lines });
+        localStorage.setItem('pennyHistory', JSON.stringify(history.slice(0, 10)));
+        renderHistory();
+      } catch (err) {
+        document.getElementById('error').textContent = err.message;
+      }
+    }
+
+    function renderHistory() {
+      const history = JSON.parse(localStorage.getItem('pennyHistory') || '[]');
+      const list = document.getElementById('historyList');
+      list.innerHTML = '';
+      history.forEach(entry => {
+        const li = document.createElement('li');
+        li.textContent = `${entry.date}: ${entry.items.join(' | ')}`;
+        list.appendChild(li);
+      });
+    }
+
+    window.onload = renderHistory;
+  </script>
+</body>
+</html>
